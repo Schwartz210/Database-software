@@ -1,8 +1,9 @@
 __author__ = 'aschwartz - Schwartz210@gmail.com'
 from db_interface import add_record, pull_data, update_record
+from excel import export
 from tkinter import *
 from functools import partial
-from collections import OrderedDict
+from PIL import Image, ImageTk
 
 
 
@@ -17,14 +18,17 @@ class HomeScreen(object):
         self.master = Tk()
         self.build_canvas()
         self.menubar()
-        mainloop()
+        self.master.mainloop()
 
     def build_canvas(self):
         self.master.title('Avi Enterprise Pro')
-        self.width = 900
-        self.height = 600
-        self.canvas = Canvas(self.master, width=self.width, height=self.height)
-        self.canvas.grid()
+        self.master.wm_geometry("600x600")
+        self.photo_contact = ImageTk.PhotoImage(Image.open('image/contact.png'))
+        self.photo_record = ImageTk.PhotoImage(Image.open('image/record.png'))
+        self.button_new_contact = Button(self.master, image=self.photo_contact, borderwidth=0, command=self.new_contact)
+        self.button_new_contact.grid(sticky=W, column=0, row=0)
+        self.button_record = Button(image=self.photo_record, borderwidth=0, command=self.reporting)
+        self.button_record.grid(sticky=W, column=0, row=1)
 
     def menubar(self):
         self.menu = Menu(self.master)
@@ -37,8 +41,8 @@ class HomeScreen(object):
         self.menu.add_cascade(label="File", menu=filemenu)
         #Record menu
         recordmenu = Menu(self.menu, tearoff=0)
-        recordmenu.add_command(label="New record", command=self.new_record)
-        recordmenu.add_command(label="Delete record", command=self.hello)
+        recordmenu.add_command(label="New Contact", command=self.new_contact)
+        recordmenu.add_command(label="Delete Contact", command=self.hello)
         self.menu.add_cascade(label="Records", menu=recordmenu)
         #Reporting menu
         reportingmenu = Menu(self.menu, tearoff=0)
@@ -49,24 +53,24 @@ class HomeScreen(object):
     def hello(self):
         print('hello')
 
-    def new_record(self):
-        record_window = CreateRecordWindow()
+    def new_contact(self):
+        record_window = CreateContactWindow()
 
     def reporting(self):
         reporting_window = Report('all')
 
 
-
-class CreateRecordWindow(object):
+class CreateContactWindow(object):
     def __init__(self):
         self.master = Tk()
+        self.master.iconbitmap('image/contacts.ico')
         self.entries = []
         self.build_canvas()
         mainloop()
 
     def build_canvas(self):
         fields = ['First name', 'Last name','Address 1', 'Address 2','City','State','Zip','Phone']
-        self.master.title('Create new record')
+        self.master.title('New Contact')
         self.width = 150
         self.height = 150
         self.canvas = Canvas(self.master, width=self.width, height=self.height)
@@ -78,7 +82,7 @@ class CreateRecordWindow(object):
             entry.grid(row=row_num, column=2)
             self.entries.append(entry)
             row_num += 1
-        Button(self.master, text='Create Record', command=self.entry_handler).grid(row=9, column=1, sticky=S)
+        Button(self.master, text='Add Contact', command=self.entry_handler).grid(row=9, column=1, sticky=S)
         Button(self.master, text='Cancel', command=self.master.destroy).grid(row=9, column=2, sticky=S)
         self.canvas.grid()
 
@@ -107,6 +111,8 @@ class Report(object):
         self.height = 800
         self.master = Toplevel()
         self.master.title('Reporting')
+        self.master.iconbitmap('image/record.ico')
+        self.prepare_images()
         self.canvas1 = Canvas(self.master, width=self.width, height=self.height)
         self.canvas2 = Canvas(self.master, width=self.width, height=self.height)
         self.refresh_report()
@@ -131,33 +137,30 @@ class Report(object):
         self.canvas2.grid()
 
     def layout_headers(self):
-        #Button(self.canvas1,width=60,bg='blue').grid(column=0, row=0)
         Button(self.canvas1,
-               text='Customize Report',
-               width=15,
-               height=1,
-               borderwidth=1,
-               font=('calibri',12,'bold',),
-               command=self.customize_report,
-               bg='#dcdcdc').grid(column=0, row=0)
+               borderwidth=0,
+               image=self.photo_custom,
+               command=self.customize_report).grid(column=0, row=0)
 
         Button(self.canvas1,
-               text='Refresh Report',
-               width=15,
-               height=1,
-               borderwidth=1,
-               font=('calibri',12,'bold',),
-               command=self.refresh_report,
-               bg='#dcdcdc').grid(column=1, row=0)
+               borderwidth=0,
+               image=self.photo_refresh,
+               command=self.refresh_report).grid(column=1, row=0)
+        Button(self.canvas1,
+               borderwidth=0,
+               image=self.photo_excel,
+               command=lambda: export(self.data)).grid(column=2, row=0)
+
         iterator_column = 0
         for field in self.display_fields:
             text = field.replace('_',' ')
+            text = text.replace('Address',' Address ')
             Button(self.canvas2,
                    text=text,
                    width=self.button_width[iterator_column],
                    height=1,
                    borderwidth=1,
-                   font=('arial',12,'bold'),
+                   font=('Corbel',10,'bold'),
                    anchor=W,
                    command=partial(self.custom_sort,iterator_column)).grid(row=1, column=iterator_column)
             iterator_column += 1
@@ -211,6 +214,11 @@ class Report(object):
                 max_value = len(str(lst[column]))
         return max_value
 
+    def prepare_images(self):
+        self.photo_custom = ImageTk.PhotoImage(Image.open('image/custom.png'))
+        self.photo_refresh = ImageTk.PhotoImage(Image.open('image/refresh_report.png'))
+        self.photo_excel = ImageTk.PhotoImage(Image.open('image/excel.png'))
+
 class RecordWindow(object):
     def __init__(self, ID):
         self.ID = ID
@@ -218,6 +226,7 @@ class RecordWindow(object):
         self.height = 200
         self.entries = []
         self.master = Toplevel()
+        self.master.iconbitmap('image/record.ico')
         self.get_data()
         self.build_canvas()
         self.master.mainloop()
